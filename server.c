@@ -12,13 +12,18 @@
 #define TRUE   1
 #define FALSE  0
 #define PORT 8080
+#define max_clients 50
 
 int main(int argc , char *argv[])
 {
 
+    char* usernames[max_clients] = {"chen", "ali"};
+    char* passwords[max_clients] = {"123", "321"};
+
+
     int opt = TRUE;
-    int master_socket , addrlen , new_socket , client_socket[30] ,
-          max_clients = 30 , activity, i , valread , sd;
+    int master_socket , addrlen , new_socket , client_socket[max_clients] ,
+          activity, i , valread , sd;
     int max_sd;
     struct sockaddr_in address;
 
@@ -28,12 +33,17 @@ int main(int argc , char *argv[])
     fd_set readfds;
 
     //a message
-    char *message = "ECHO Daemon v1.0 \r\n";
+    char *message = "Welcome to Ali and Chen's FTP server! \r\n";
+
+    int authenticated[max_clients];
+    int conn2user[max_clients];
 
     //initialise all client_socket[] to 0 so not checked
     for (i = 0; i < max_clients; i++)
     {
         client_socket[i] = 0;
+        authenticated[i] = 0;
+        conn2user[i] = -1;
     }
 
     //create a master socket
