@@ -20,7 +20,24 @@ void sendMsg(int sd, const char* msg) {
     }
 }
 
-void parseMsg(char* buffer, int sd) {
+int findUser(const char* uname, char** usernames) {
+    for (int i=0; i<max_clients; i++) {
+        if (strcmp(uname, usernames[i]) == 0) return i;
+    }
+    return -1;
+}
+
+void processUser(const char* uname, char** usernames, int sd, int sd_index, int* sd2user) {
+    int result = findUser(uname, usernames);
+    if (result == -1) {
+        sendMsg(sd, "Username does not exist");
+    } else {
+        sd2user[sd_index] = result;
+        sendMsg(sd, "Username OK, password required");
+    }
+}
+
+void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticated, char** usernames, char** passwords) {
     char *line, ins[50];
     int c;
 
@@ -33,6 +50,7 @@ void parseMsg(char* buffer, int sd) {
                 c = sscanf(line, "%*s %256s", arg);
                 if (c == 1) {
                     printf("User %s wants to log in. \n", arg);
+                    processUser(arg, usernames, sd, sd_index, sd2user);
                 } else {
                     sendMsg(sd, "Wrong number of arguments. \n");
                 }
@@ -51,6 +69,9 @@ void parseMsg(char* buffer, int sd) {
         line = strtok(NULL, "\n");
     }
 }
+
+
+
 
 int main(int argc , char *argv[])
 {
@@ -74,14 +95,14 @@ int main(int argc , char *argv[])
     char *message = "Welcome to Ali and Chen's FTP server! \r\n";
 
     int authenticated[max_clients];
-    int conn2user[max_clients];
+    int sd2user[max_clients];
 
     //initialise all client_socket[] to 0 so not checked
     for (i = 0; i < max_clients; i++)
     {
         client_socket[i] = 0;
         authenticated[i] = 0;
-        conn2user[i] = -1;
+        sd2user[i] = -1;
     }
 
     //create a master socket
@@ -215,6 +236,8 @@ int main(int argc , char *argv[])
                     //Close the socket and mark as 0 in list for reuse
                     close( sd );
                     client_socket[i] = 0;
+                    sd2user[i] = -1;
+                    authenticated[i] = 0;
                 }
 
                 //Echo back the message that came in
@@ -223,8 +246,8 @@ int main(int argc , char *argv[])
                     //set the string terminating NULL byte on the end
                     //of the data read
                     buffer[valread] = '\0';
-                    parseMsg(buffer, sd);
-                    send(sd , buffer , strlen(buffer) , 0 );
+                    parseMsg(buffer, sd, i, sd2user, authenticated, usernames, passwords);
+                    //send(sd , buffer , strlen(buffer) , 0 );
                 }
             }
         }
