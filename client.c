@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
-#define PORT 8080
+//#define PORT 8080
 
 int main(int argc, char const *argv[])
 {
@@ -13,15 +13,17 @@ int main(int argc, char const *argv[])
     struct sockaddr_in serv_addr;
     char *hello = "USER chen";
     char buffer[1024] = {0};
-    //PORT = argv[2]
+    char cmd[256];
+    char userIn[256];
+
+    PORT = argv[2]
     sd = socket(AF_INET, SOCK_STREAM, 0);
+
     if (sd < 0)
     {
         printf("\n Socket creation error \n");
         return -1;
     }
-
-
     
     memset(&serv_addr, '0', sizeof(serv_addr));
     
@@ -40,9 +42,32 @@ int main(int argc, char const *argv[])
         printf("\nConnection Failed \n");
         return -1;
     }
-    send(sd , hello , strlen(hello) , 0 );
-    printf("Hello message sent\n");
-    valread = read( sd , buffer, 1024);
-    printf("%s\n",buffer );
+
+    while(True){
+    	printf("\nftp> ");
+    	fgets(cmd, 256, stdin);
+    	sscanf(cmd, "%s", userIn);
+
+    	if (strcmp(userIn, "USER")==0){
+    		send(sd , cmd , strlen(cmd) , 0 );
+    		printf("Username sent\n");
+    		valread = read(sd, buffer, 1024)
+    		printf("/s\n", buffer);
+
+    	}
+
+    	if (strcmp(userIn, "PASS")==0){
+    		send(sd , cmd , strlen(cmd) , 0 );
+    		printf("Password sent\n");
+    		valread = read(sd, buffer, 1024)
+    		printf("/s\n", buffer);
+
+    	}
+
+    }
+    //send(sd , hello , strlen(hello) , 0 );
+    //printf("Hello message sent\n");
+    //valread = read( sd , buffer, 1024);
+    //printf("%s\n",buffer );
     return 0;
 }
