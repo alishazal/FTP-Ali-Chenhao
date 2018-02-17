@@ -15,7 +15,6 @@
 
 int main(int argc , char *argv[])
 {
-    int 
 
     int opt = TRUE;
     int master_socket , addrlen , new_socket , client_socket[30] ,
