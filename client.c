@@ -11,7 +11,7 @@ int main(int argc, char const *argv[])
     struct sockaddr_in address;
     int sd = 0, valread;
     struct sockaddr_in serv_addr;
-    char *hello = "Hello from client";
+    char *hello = "USER chen";
     char buffer[1024] = {0};
     //PORT = argv[2]
     sd = socket(AF_INET, SOCK_STREAM, 0);

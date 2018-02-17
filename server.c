@@ -12,13 +12,56 @@
 #define TRUE   1
 #define FALSE  0
 #define PORT 8080
+#define max_clients 50
+
+void sendMsg(int sd, const char* msg) {
+    if (send(sd, msg, strlen(msg), 0) != strlen(msg)) {
+        perror("send");
+    }
+}
+
+void parseMsg(char* buffer, int sd) {
+    char *line, ins[50];
+    int c;
+
+    line = strtok(strdup(buffer), "\n");
+    while (line != NULL) {
+        c = sscanf(line, "%50s", ins);
+        if (c == 1) {
+            if (strcmp(ins, "USER") == 0) {
+                char arg[256];
+                c = sscanf(line, "%*s %256s", arg);
+                if (c == 1) {
+                    printf("User %s wants to log in. \n", arg);
+                } else {
+                    sendMsg(sd, "Wrong number of arguments. \n");
+                }
+            } else if (strcmp(ins, "PASS") == 0) {
+                char arg[256];
+                c = sscanf(line, "%*s %256s", arg);
+                if (c == 1) {
+                    printf("Password: %s \n", arg);
+                } else {
+                    sendMsg(sd, "Wrong number of arguments. \n");
+                }
+            } else {
+                sendMsg(sd, "Invalid command. \n");
+            }
+        }
+        line = strtok(NULL, "\n");
+    }
+}
 
 int main(int argc , char *argv[])
 {
 
+    char* usernames[max_clients] = {"chen", "ali"};
+    char* passwords[max_clients] = {"123", "321"};
+
+
     int opt = TRUE;
-    int master_socket , addrlen , new_socket , client_socket[30] ,
-          max_clients = 30 , activity, i , valread , sd;
+    int master_socket , addrlen , new_socket , client_socket[max_clients] ,
+          activity, i , valread , sd;
     int max_sd;
     struct sockaddr_in address;
 
@@ -28,12 +71,17 @@ int main(int argc , char *argv[])
     fd_set readfds;
 
     //a message
-    char *message = "ECHO Daemon v1.0 \r\n";
+    char *message = "Welcome to Ali and Chen's FTP server! \r\n";
+
+    int authenticated[max_clients];
+    int conn2user[max_clients];
 
     //initialise all client_socket[] to 0 so not checked
     for (i = 0; i < max_clients; i++)
     {
         client_socket[i] = 0;
+        authenticated[i] = 0;
+        conn2user[i] = -1;
     }
 
     //create a master socket
@@ -175,6 +223,7 @@ int main(int argc , char *argv[])
                     //set the string terminating NULL byte on the end
                     //of the data read
                     buffer[valread] = '\0';
+                    parseMsg(buffer, sd);
                     send(sd , buffer , strlen(buffer) , 0 );
                 }
             }
