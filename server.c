@@ -14,6 +14,42 @@
 #define PORT 8080
 #define max_clients 50
 
+void sendMsg(int sd, const char* msg) {
+    if (send(sd, msg, strlen(msg), 0) != strlen(msg)) {
+        perror("send");
+    }
+}
+
+void parseMsg(char* buffer, int sd) {
+    char *line, *ins;
+    line = strtok(strdup(buffer), "\n");
+    int c;
+    do {
+        c = sscanf(line, "%s", ins);
+        if (c == 1) {
+            if (strcmp(ins, "USER") == 0) {
+                char *arg;
+                c = sscanf(line, "%s", arg);
+                if (c == 1) {
+                    printf("User %s wants to log in. \n", arg);
+                } else {
+                    sendMsg(sd, "Wrong number of arguments. \n");
+                }
+            } else if (strcmp(ins, "PASS") == 0) {
+                char *arg;
+                c = sscanf(line, "%s", arg);
+                if (c == 1) {
+                    printf("Password: %s \n", arg);
+                } else {
+                    sendMsg(sd, "Wrong number of arguments. \n");
+                }
+            } else {
+                sendMsg(sd, "Invalid command. \n");
+            }
+        }
+    } while ((line = strtok(NULL, "\n")) != NULL);
+}
+
 int main(int argc , char *argv[])
 {
 
@@ -185,7 +221,8 @@ int main(int argc , char *argv[])
                     //set the string terminating NULL byte on the end
                     //of the data read
                     buffer[valread] = '\0';
-                    send(sd , buffer , strlen(buffer) , 0 );
+                    parseMsg(buffer, sd);
+                    //send(sd , buffer , strlen(buffer) , 0 );
                 }
             }
         }
