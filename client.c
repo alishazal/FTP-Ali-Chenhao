@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
-#define PORT 8080
+//#define PORT 8080
 
 int main(int argc, char const *argv[])
 {
@@ -16,8 +16,9 @@ int main(int argc, char const *argv[])
     char buffer[1024] = {0};
     char cmd[256];
     char userIn[256];
+    char msg[256];
 
-    //PORT = atoi(argv[2]);
+    int PORT = atoi(argv[2]);
     sd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (sd < 0)
@@ -32,7 +33,7 @@ int main(int argc, char const *argv[])
     serv_addr.sin_port = htons(PORT);
     
     // Convert IPv4 and IPv6 addresses from text to binary form
-    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0)
+    if(inet_pton(AF_INET, argv[1], &serv_addr.sin_addr)<=0)
     {
         printf("\nInvalid address/ Address not supported \n");
         return -1;
@@ -53,6 +54,9 @@ int main(int argc, char const *argv[])
     		send(sd , cmd , strlen(cmd) , 0 );
     		printf("Username sent\n");
     		valread = read(sd, buffer, 1024);
+            //FILE *ss = fdopen(sd, "r");
+            //fgets(msg, 256, ss);
+            //buffer[valread] = '\0';
     		printf("%s\n", buffer);
 
     	}
@@ -61,6 +65,7 @@ int main(int argc, char const *argv[])
     		send(sd , cmd , strlen(cmd) , 0 );
     		printf("Password sent\n");
     		valread = read(sd, buffer, 1024);
+            buffer[valread] = '\0';
     		printf("%s\n", buffer);
 
     	}
