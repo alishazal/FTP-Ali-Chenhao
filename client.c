@@ -4,19 +4,20 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
-//#define PORT 8080
+#define PORT 8080
 
 int main(int argc, char const *argv[])
 {
     struct sockaddr_in address;
     int sd = 0, valread;
+    //int PORT = 8080;
     struct sockaddr_in serv_addr;
     char *hello = "PASS 123\nUSER chen\n USER ali\n USER nabil\n USER yasir\nPASS 123\nPASS 321\nblah\nQUIT\nPASS 123\n";
     char buffer[1024] = {0};
     char cmd[256];
     char userIn[256];
 
-    PORT = argv[2]
+    //PORT = atoi(argv[2]);
     sd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (sd < 0)
@@ -43,7 +44,7 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
-    while(True){
+    while(1){
     	printf("\nftp> ");
     	fgets(cmd, 256, stdin);
     	sscanf(cmd, "%s", userIn);
@@ -51,16 +52,16 @@ int main(int argc, char const *argv[])
     	if (strcmp(userIn, "USER")==0){
     		send(sd , cmd , strlen(cmd) , 0 );
     		printf("Username sent\n");
-    		valread = read(sd, buffer, 1024)
-    		printf("/s\n", buffer);
+    		valread = read(sd, buffer, 1024);
+    		printf("%s\n", buffer);
 
     	}
 
     	if (strcmp(userIn, "PASS")==0){
     		send(sd , cmd , strlen(cmd) , 0 );
     		printf("Password sent\n");
-    		valread = read(sd, buffer, 1024)
-    		printf("/s\n", buffer);
+    		valread = read(sd, buffer, 1024);
+    		printf("%s\n", buffer);
 
     	}
 
