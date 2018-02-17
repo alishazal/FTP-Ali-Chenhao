@@ -11,10 +11,12 @@
 
 #define TRUE   1
 #define FALSE  0
-#define PORT 21
+#define PORT 8080
 
 int main(int argc , char *argv[])
 {
+    int 
+
     int opt = TRUE;
     int master_socket , addrlen , new_socket , client_socket[30] ,
           max_clients = 30 , activity, i , valread , sd;
