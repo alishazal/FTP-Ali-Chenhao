@@ -1,4 +1,3 @@
-// Client side C/C++ program to demonstrate Socket programming
 #include <stdio.h>
 #include <sys/socket.h>
 #include <stdlib.h>
@@ -9,7 +8,6 @@ int main(int argc, char const *argv[])
 {
     struct sockaddr_in address;
     int sd = 0, valread;
-    //int PORT = 8080;
     struct sockaddr_in serv_addr;
     char *hello = "PASS 123\nUSER chen\n USER ali\n USER nabil\n USER yasir\nPASS 123\nPASS 321\nblah\nQUIT\nPASS 123\n";
     char buffer[1024] = {0};
@@ -50,16 +48,16 @@ int main(int argc, char const *argv[])
     	sscanf(cmd, "%s", userIn);
 
     	if (strcmp(userIn, "USER")==0){
+
     		send(sd , cmd , strlen(cmd) , 0 );
-    		printf("Username sent\n");
     		valread = read(sd, buffer, 1024);
     		printf("%s\n", buffer);
 
     	}
 
     	if (strcmp(userIn, "PASS")==0){
+
     		send(sd , cmd , strlen(cmd) , 0 );
-    		printf("Password sent\n");
     		valread = read(sd, buffer, 1024);
             buffer[valread] = '\0';
     		printf("%s\n", buffer);
