@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
-//#define PORT 8080
 
 int main(int argc, char const *argv[])
 {
@@ -54,9 +53,6 @@ int main(int argc, char const *argv[])
     		send(sd , cmd , strlen(cmd) , 0 );
     		printf("Username sent\n");
     		valread = read(sd, buffer, 1024);
-            //FILE *ss = fdopen(sd, "r");
-            //fgets(msg, 256, ss);
-            //buffer[valread] = '\0';
     		printf("%s\n", buffer);
 
     	}
@@ -71,9 +67,6 @@ int main(int argc, char const *argv[])
     	}
 
     }
-    //send(sd , hello , strlen(hello) , 0 );
-    //printf("Hello message sent\n");
-    //valread = read( sd , buffer, 1024);
-    //printf("%s\n",buffer );
+    
     return 0;
 }
