@@ -9,15 +9,19 @@
 int main(int argc, char const *argv[])
 {
     struct sockaddr_in address;
-    int sock = 0, valread;
+    int sd = 0, valread;
     struct sockaddr_in serv_addr;
     char *hello = "Hello from client";
     char buffer[1024] = {0};
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    //PORT = argv[2]
+    sd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sd < 0)
     {
         printf("\n Socket creation error \n");
         return -1;
     }
+
+
     
     memset(&serv_addr, '0', sizeof(serv_addr));
     
@@ -31,14 +35,14 @@ int main(int argc, char const *argv[])
         return -1;
     }
     
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    if (connect(sd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
         printf("\nConnection Failed \n");
         return -1;
     }
-    send(sock , hello , strlen(hello) , 0 );
+    send(sd , hello , strlen(hello) , 0 );
     printf("Hello message sent\n");
-    valread = read( sock , buffer, 1024);
+    valread = read( sd , buffer, 1024);
     printf("%s\n",buffer );
     return 0;
 }
