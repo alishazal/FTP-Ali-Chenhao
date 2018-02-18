@@ -14,6 +14,8 @@
 #define PORT 8080
 #define max_clients 50
 
+// Based in part on code found on geeksforgeeks.com
+
 void sendMsg(int sd, const char* msg) {
     if (send(sd, msg, strlen(msg), 0) != strlen(msg)) {
         perror("send");
@@ -60,10 +62,10 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
         char** passwords, int* client_socket) {
     char *line, ins[50];
     int c;
-    int connected = 1; //If the socket is still connected
+    int connected = 1; // If the socket is still connected
     line = strtok(strdup(buffer), "\n");
     while (line != NULL && connected) {
-        c = sscanf(line, "%50s", ins);
+        c = sscanf(line, "%50s", ins); // Look for instruction
         if (c == 1) {
             if (strcmp(ins, "USER") == 0) {
                 char arg[256];
@@ -89,7 +91,7 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
                 client_socket[sd_index] = 0;
                 sd2user[sd_index] = -1; //dissociate user from connection
                 authenticated[sd_index] = 0; //reset authentication status
-                connected = 0;
+                connected = 0; // So that the server stops reading messages
             } else if (strcmp(ins, "PUT") == 0) {
                 if (!authenticated[sd_index]) {
                     sendMsg(sd, "Authenticate first");
