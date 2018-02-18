@@ -88,6 +88,7 @@ int main(int argc, char const *argv[])
             send(sd , cmd , strlen(cmd) , 0 );
             //Reads reply from socket
             valread = read(sd, buffer, 1024);
+            buffer[valread] = '\0';
             //Displays if the command was successfully executed
             printf("%s\n", buffer);
 
@@ -100,6 +101,7 @@ int main(int argc, char const *argv[])
             send(sd , cmd , strlen(cmd) , 0 );
             //Reads reply from socket
             valread = read(sd, buffer, 1024);
+            buffer[valread] = '\0';
             //Displays if the command was successfully executed
             printf("%s\n", buffer);
 
@@ -112,6 +114,7 @@ int main(int argc, char const *argv[])
             send(sd , cmd , strlen(cmd) , 0 );
             //Reads reply from socket
             valread = read(sd, buffer, 1024);
+            buffer[valread] = '\0';
             //Displays if the command was successfully executed
             printf("%s\n", buffer);
 
@@ -124,6 +127,7 @@ int main(int argc, char const *argv[])
             send(sd , cmd , strlen(cmd) , 0 );
             //Reads reply from socket
             valread = read(sd, buffer, 1024);
+            buffer[valread] = '\0';
             //Displays if the command was successfully executed
             printf("%s\n", buffer);
 
@@ -136,6 +140,7 @@ int main(int argc, char const *argv[])
             send(sd , cmd , strlen(cmd) , 0 );
             //Reads reply from socket
             valread = read(sd, buffer, 1024);
+            buffer[valread] = '\0';
             //Displays if the command was successfully executed
             printf("%s\n", buffer);
 
