@@ -100,23 +100,25 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
-            } else if (strcmp(ins, "ls") == 0) {
+            } else if (strcmp(ins, "LS") == 0) {
                 if (!authenticated[sd_index]) {
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
-            } else if (strcmp(ins, "pwd") == 0) {
+            } else if (strcmp(ins, "PWD") == 0) {
                 if (!authenticated[sd_index]) {
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
-            } else if (strcmp(ins, "cd") == 0) {
+            } else if (strcmp(ins, "CD") == 0) {
                 if (!authenticated[sd_index]) {
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
             } else {
-                sendMsg(sd, "Invalid FTP command");
+                sendMsg(sd, "Invalid FTP command: ");
+                printf("Invalid command: %s\n", line);
+                //sendMsg(sd, line);
             }
         }
         line = strtok(NULL, "\n");
