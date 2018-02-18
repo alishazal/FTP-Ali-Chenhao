@@ -145,7 +145,7 @@ int main(int argc , char *argv[])
     //set of socket descriptors
     fd_set readfds;
 
-    //a message
+    //welcome message
     char *message = "Welcome to Ali and Chen's FTP server! \n";
 
     int authenticated[max_clients]; //map of whether a connection has authenticated
