@@ -66,6 +66,7 @@ int openDataSocket(int sd, struct sockaddr_in src_addr) {
     struct sockaddr_in target_addr; // Target address to connect to
     int addr_len = sizeof(user_addr);
     int new_sd;
+    int opt = TRUE;
     if (getpeername(sd , (struct sockaddr*)&user_addr, &addr_len) == -1) {
         perror("Cannot read socket information.\n");
         return -1;
@@ -80,6 +81,12 @@ int openDataSocket(int sd, struct sockaddr_in src_addr) {
     if( (new_sd = socket(AF_INET , SOCK_STREAM , 0)) == 0) { // Create new socket
         perror("socket creation failed\n");
         return -1;
+    }
+
+    if(setsockopt(new_sd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, // Needs to set SO_REUSEADDR to allow immediate re-bind
+          sizeof(opt)) < 0 ) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
     }
 
     if (bind(new_sd, (struct sockaddr *)&src_addr, sizeof(src_addr)) < 0) { // Bind socket to source port
@@ -109,6 +116,52 @@ void processLS(char* command, int sd, struct sockaddr_in src_addr) {
         return;
     }
 
+    for (int i=0; i<strlen(command) - 1; i++) {
+        if (command[i] == 'L' && command[i+1] == 'S') {
+            command[i] = 'l';
+            command[i+1] = 's';
+            break;
+        }
+    }
+
+    fp = popen(command, "r");
+    if (fp ==NULL) {
+        perror("ls failed\n");
+        sendMsg(sd, "wrong command usage!\n");
+    } else {
+        sendMsg(sd, "successfully executed!\n");
+        while (fgets(path, max, fp) != NULL) {
+            sendMsg(data_sd, path);
+            printf("%s\n", path);
+        }
+    }
+
+    pclose(fp);
+
+    close(data_sd);
+}
+
+void processPWD(char* command, int sd, struct sockaddr_in src_addr) {
+    FILE *fp;
+    int max = 256;
+    char path[max];
+
+    int data_sd = openDataSocket(sd, src_addr);
+
+    if (data_sd == -1) {
+        perror("Data channel connection failed\n");
+        return;
+    }
+
+    for (int i=0; i<strlen(command)-2; i++) {
+        if (command[i] == 'P' && command[i+1] == 'W' && command[i+2] == 'D') {
+            command[i] = 'p';
+            command[i+1] = 'w';
+            command[i+2] = 'd';
+            break;
+        }
+    }
+
     for (int i=0; i<strlen(command); i++) {
         if (command[i] == 'L' && command[i+1] == 'S') {
             command[i] = 'l';
@@ -128,6 +181,8 @@ void processLS(char* command, int sd, struct sockaddr_in src_addr) {
             printf("%s\n", path);
         }
     }
+
+    pclose(fp);
 
     close(data_sd);
 }
@@ -190,6 +245,8 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
+                processPWD(line, sd, src_addr);
+
             } else if (strcmp(ins, "CD") == 0) {
                 if (!authenticated[sd_index]) {
                     sendMsg(sd, "Authenticate first");

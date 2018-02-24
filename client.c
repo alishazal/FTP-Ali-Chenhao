@@ -78,39 +78,39 @@ int main(int argc, char const *argv[])
     while(1){
 
         //Displays "ftp> " in the command line
-    	printf("\nftp> ");
+        printf("\nftp> ");
 
         //Gets command from user
-    	fgets(cmd, 256, stdin);
+        fgets(cmd, 256, stdin);
 
         //Stores first word of the command
-    	sscanf(cmd, "%s", userIn);
+        sscanf(cmd, "%s", userIn);
 
         //If command is "USER username"
-    	if (strcmp(userIn, "USER")==0){
+        if (strcmp(userIn, "USER")==0){
 
             //Sends command to server
-    		send(sd , cmd , strlen(cmd) , 0 );
+            send(sd , cmd , strlen(cmd) , 0 );
             //Reads reply from socket
-    		valread = read(sd, buffer, 1024);
+            valread = read(sd, buffer, 1024);
             buffer[valread] = '\0';
             //Displays if the command was successfully executed
-    		printf("%s\n", buffer);
+            printf("%s\n", buffer);
 
-    	}
+        }
 
         //If command is "PASS password"
-    	else if (strcmp(userIn, "PASS")==0){
+        else if (strcmp(userIn, "PASS")==0){
 
             //Sends command to server
-    		send(sd , cmd , strlen(cmd) , 0 );
+            send(sd , cmd , strlen(cmd) , 0 );
             //Reads reply from socket
-    		valread = read(sd, buffer, 1024);
+            valread = read(sd, buffer, 1024);
             buffer[valread] = '\0';
             //Displays if the command was successfully executed
-    		printf("%s\n", buffer);
+            printf("%s\n", buffer);
 
-    	}
+        }
 
         //If command is "PUT a existed file"
         else if (strcmp(userIn, "PUT")==0){
@@ -153,8 +153,8 @@ int main(int argc, char const *argv[])
 
         //If command is "LS ..."
         else if (strcmp(userIn, "LS")==0){
-        	addr_len = sizeof(data_addr);
-        	int new_data_sd = 0;
+            addr_len = sizeof(data_addr);
+            int new_data_sd = 0;
             //Sends command to server
             send(sd , cmd , strlen(cmd) , 0 );
             //Reads reply from socket
@@ -162,30 +162,43 @@ int main(int argc, char const *argv[])
             buffer[valread] = '\0';
 
             //Displays if the command was successfully executed
-            printf("Read from control socket: %s\n", buffer);
+            //printf("Read from control socket: %s\n", buffer);
+            // Ali: please add error handling here, if buffer reads "wrong command usage" then declare error and skip the next part
 
             if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
-            	perror("Failure to accept connection ");
-            	continue;
+                perror("Failure to accept connection ");
+                continue;
             }
 
             valread = recv(new_data_sd, buffer, 1024, MSG_WAITALL); // Read data until socket is closed by the server
             buffer[valread] = '\0';
-            printf("Read from data socket: %s\n", buffer);
+            printf("%s\n", buffer);
             close(new_data_sd);
         }
 
         //If command is "PWD"
         else if (strcmp(userIn, "PWD")==0){
-
+            addr_len = sizeof(data_addr);
+            int new_data_sd = 0;
             //Sends command to server
             send(sd , cmd , strlen(cmd) , 0 );
             //Reads reply from socket
             valread = read(sd, buffer, 1024);
             buffer[valread] = '\0';
-            //Displays if the command was successfully executed
-            printf("%s\n", buffer);
 
+            //Displays if the command was successfully executed
+            //printf("Read from control socket: %s\n", buffer);
+            // Ali: please add error handling here, if buffer reads "wrong command usage" then declare error and skip the next part
+
+            if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
+                perror("Failure to accept connection ");
+                continue;
+            }
+
+            valread = recv(new_data_sd, buffer, 1024, MSG_WAITALL); // Read data until socket is closed by the server
+            buffer[valread] = '\0';
+            printf("%s\n", buffer);
+            close(new_data_sd);
         }
 
         //Doesn't accept any other commands
@@ -193,6 +206,9 @@ int main(int argc, char const *argv[])
             printf("An invalid ftp command.");
         }
     }
+
+    close(sd);
+    close(data_sd);
 
     return 0;
 }
