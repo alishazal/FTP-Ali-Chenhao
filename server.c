@@ -8,10 +8,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
+#include <dirent.h> // Directory stuffs
 
 #define TRUE   1
 #define FALSE  0
 #define PORT 8080
+#define DATA_PORT 8081
 #define max_clients 50
 
 // Based in part on code found on geeksforgeeks.com
@@ -58,8 +60,81 @@ void processPass(const char* pass, char** passwords, int sd, int sd_index, int* 
     }
 }
 
+int openDataSocket(int sd, struct sockaddr_in src_addr) {
+    // Open a data connection connection to user and returns the socket descriptor
+    struct sockaddr_in user_addr; // Address of user control channel connection
+    struct sockaddr_in target_addr; // Target address to connect to
+    int addr_len = sizeof(user_addr);
+    int new_sd;
+    if (getpeername(sd , (struct sockaddr*)&user_addr, &addr_len) == -1) {
+        perror("Cannot read socket information.\n");
+        return -1;
+    }
+    target_addr = user_addr;
+    target_addr.sin_port = htons(ntohs(user_addr.sin_port) + 1);
+    printf("User connection: ip %s , port %d \n" ,
+                          inet_ntoa(user_addr.sin_addr) , ntohs(user_addr.sin_port));
+    printf("Target connection: ip %s , port %d \n" ,
+                          inet_ntoa(target_addr.sin_addr) , ntohs(target_addr.sin_port));
+
+    if( (new_sd = socket(AF_INET , SOCK_STREAM , 0)) == 0) { // Create new socket
+        perror("socket creation failed\n");
+        return -1;
+    }
+
+    if (bind(new_sd, (struct sockaddr *)&src_addr, sizeof(src_addr)) < 0) { // Bind socket to source port
+        perror("bind failed\n");
+        return -1;
+    }
+
+    if (connect(new_sd, (struct sockaddr *)&target_addr, sizeof(target_addr)) < 0) { // Connect to target
+        perror("Connection Failed \n");
+        return -1;
+    }
+
+    printf("Connected to client data channel. \n");
+
+    return new_sd;
+}
+
+void processLS(char* command, int sd, struct sockaddr_in src_addr) {
+    FILE *fp;
+    int max = 256;
+    char path[max];
+
+    int data_sd = openDataSocket(sd, src_addr);
+
+    if (data_sd == -1) {
+        perror("Data channel connection failed\n");
+        return;
+    }
+
+    for (int i=0; i<strlen(command); i++) {
+        if (command[i] == 'L' && command[i+1] == 'S') {
+            command[i] = 'l';
+            command[i+1] = 's';
+            break;
+        }
+    }
+
+    fp = popen(command, "r");
+    if (fp ==NULL) {
+        perror("ls failed\n");
+        sendMsg(sd, "wrong command usage!\n");
+    } else {
+        sendMsg(sd, "successfully executed!\n");
+        while (fgets(path, max, fp) != NULL) {
+            sendMsg(data_sd, path);
+            printf("%s\n", path);
+        }
+    }
+
+    close(data_sd);
+}
+
+
 void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticated, char** usernames, 
-        char** passwords, int* client_socket) {
+        char** passwords, int* client_socket, struct sockaddr_in src_addr) {
     char *line, ins[50];
     int c;
     int connected = 1; // If the socket is still connected
@@ -107,6 +182,9 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
+
+                processLS(line, sd, src_addr);
+
             } else if (strcmp(ins, "PWD") == 0) {
                 if (!authenticated[sd_index]) {
                     sendMsg(sd, "Authenticate first");
@@ -142,7 +220,7 @@ int main(int argc , char *argv[])
     int master_socket , addrlen , new_socket , client_socket[max_clients] ,
           activity, i , valread , sd;
     int max_sd;
-    struct sockaddr_in address;
+    struct sockaddr_in address, data_addr;
 
     char buffer[2049];  //data buffer of 2K
 
@@ -154,6 +232,8 @@ int main(int argc , char *argv[])
 
     int authenticated[max_clients]; //map of whether a connection has authenticated
     int sd2user[max_clients]; //map from socket to user
+    char* sd2dir[max_clients]; //map from socket to directory
+
 
     //initialise all client_socket[] to 0 so not checked
     for (i = 0; i < max_clients; i++)
@@ -161,6 +241,7 @@ int main(int argc , char *argv[])
         client_socket[i] = 0;
         authenticated[i] = 0;
         sd2user[i] = -1;
+        sd2dir[i] = NULL;
     }
 
     for (i = user_count; i<max_clients; i++) {
@@ -189,7 +270,10 @@ int main(int argc , char *argv[])
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons( PORT );
 
-    //bind the socket to localhost port 8888
+    data_addr = address;
+    data_addr.sin_port = htons( DATA_PORT );
+
+    //bind the socket to localhost port 8080
     if (bind(master_socket, (struct sockaddr *)&address, sizeof(address))<0)
     {
         perror("bind failed");
@@ -308,7 +392,8 @@ int main(int argc , char *argv[])
                     //set the string terminating NULL byte on the end
                     //of the data read
                     buffer[valread] = '\0';
-                    parseMsg(buffer, sd, i, sd2user, authenticated, usernames, passwords, client_socket); //process msg
+                    //openDataSocket(sd, data_addr);
+                    parseMsg(buffer, sd, i, sd2user, authenticated, usernames, passwords, client_socket, data_addr); //process msg
                     //send(sd , buffer , strlen(buffer) , 0 );
                 }
             }
