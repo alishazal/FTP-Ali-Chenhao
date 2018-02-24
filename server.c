@@ -15,6 +15,7 @@
 #define PORT 8080
 #define DATA_PORT 8081
 #define max_clients 50
+#define BUF_SIZE 1024
 
 // Based in part on code found on geeksforgeeks.com
 
@@ -73,10 +74,10 @@ int openDataSocket(int sd, struct sockaddr_in src_addr) {
     }
     target_addr = user_addr;
     target_addr.sin_port = htons(ntohs(user_addr.sin_port) + 1);
-    printf("User connection: ip %s , port %d \n" ,
+    /*printf("User connection: ip %s , port %d \n" ,
                           inet_ntoa(user_addr.sin_addr) , ntohs(user_addr.sin_port));
     printf("Target connection: ip %s , port %d \n" ,
-                          inet_ntoa(target_addr.sin_addr) , ntohs(target_addr.sin_port));
+                          inet_ntoa(target_addr.sin_addr) , ntohs(target_addr.sin_port));*/
 
     if( (new_sd = socket(AF_INET , SOCK_STREAM , 0)) == 0) { // Create new socket
         perror("socket creation failed\n");
@@ -86,7 +87,7 @@ int openDataSocket(int sd, struct sockaddr_in src_addr) {
     if(setsockopt(new_sd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, // Needs to set SO_REUSEADDR to allow immediate re-bind
           sizeof(opt)) < 0 ) {
         perror("setsockopt");
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     if (bind(new_sd, (struct sockaddr *)&src_addr, sizeof(src_addr)) < 0) { // Bind socket to source port
@@ -187,6 +188,74 @@ void processPWD(char* command, int sd, struct sockaddr_in src_addr) {
     close(data_sd);
 }
 
+void processGet(char* filename, int sd, struct sockaddr_in src_addr, char* buffer) {
+    FILE *fp = fopen(filename, "r");
+
+    int data_sd = openDataSocket(sd, src_addr);
+
+    if (data_sd == -1) {
+        perror("Data channel connection failed\n");
+        return;
+    }
+
+    if (!fp) {
+        perror("File does not exist.");
+        sendMsg(sd, "nonexisted\n");
+        close(data_sd);
+        return;
+    } 
+
+    sendMsg(sd, "existed");
+
+    int valread;
+
+    do { // Big files may require multiple reads
+        valread = fread(buffer, sizeof(char), BUF_SIZE, fp);
+        if (valread > 0) {
+            buffer[valread] = '\0';
+            sendMsg(data_sd, buffer);
+            printf("read and send cycle\n");
+        }
+    } while(valread == BUF_SIZE);
+    
+    fclose(fp);
+    close(data_sd);
+}
+
+void processPut(char* filename, int sd, struct sockaddr_in src_addr, char* buffer) {
+
+    int data_sd = openDataSocket(sd, src_addr);
+
+    if (data_sd == -1) {
+        perror("Data channel connection failed\n");
+        return;
+    }
+
+    FILE *fp = fopen(filename, "w");
+
+    if (fp == NULL) {
+        perror("Failed to write file");
+        close(data_sd);
+        return;
+    }
+
+    int valread;
+
+    do { // Big files may require multiple reads
+        valread = recv(data_sd, buffer, BUF_SIZE, MSG_WAITALL); 
+        if (valread > 0) {
+            buffer[valread] = '\0';
+            fprintf(fp, "%s", buffer);
+            printf("read and write cycle\n");
+        }
+    } while(valread == BUF_SIZE);
+
+    printf("Finshed reading");
+
+    fclose(fp);
+    close(data_sd);
+}
+
 
 void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticated, char** usernames, 
         char** passwords, int* client_socket, struct sockaddr_in src_addr) {
@@ -227,10 +296,26 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
+                char arg[256];
+                c = sscanf(line, "%*s %256s", arg);
+                if (c == 1) {
+                    printf("File: %s \n", arg);
+                    processPut(arg, sd, src_addr, buffer);
+                } else {
+                    sendMsg(sd, "Wrong number of arguments. \n");
+                }
             } else if (strcmp(ins, "GET") == 0) {
                 if (!authenticated[sd_index]) {
                     sendMsg(sd, "Authenticate first");
                     return;
+                }
+                char arg[256];
+                c = sscanf(line, "%*s %256s", arg);
+                if (c == 1) {
+                    printf("File: %s \n", arg);
+                    processGet(arg, sd, src_addr, buffer);
+                } else {
+                    sendMsg(sd, "Wrong number of arguments. \n");
                 }
             } else if (strcmp(ins, "LS") == 0) {
                 if (!authenticated[sd_index]) {
@@ -279,7 +364,7 @@ int main(int argc , char *argv[])
     int max_sd;
     struct sockaddr_in address, data_addr;
 
-    char buffer[2049];  //data buffer of 2K
+    char buffer[BUF_SIZE + 1];  //data buffer of 2K
 
     //set of socket descriptors
     fd_set readfds;

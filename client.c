@@ -6,6 +6,8 @@
 #include <unistd.h>   //close
 #include <arpa/inet.h>    //close
 
+#define BUF_SIZE 1024
+
 int main(int argc, char const *argv[])
 {
     struct sockaddr_in address;
@@ -13,7 +15,7 @@ int main(int argc, char const *argv[])
     int data_sd = 0; // Socket for receiving data
     int sd = 0, valread, addr_len;
     struct sockaddr_in serv_addr;
-    char buffer[1024] = {0};
+    char buffer[BUF_SIZE + 1] = {0};
     char cmd[256];
     char userIn[256];
     char msg[256];
@@ -114,28 +116,93 @@ int main(int argc, char const *argv[])
 
         //If command is "PUT a existed file"
         else if (strcmp(userIn, "PUT")==0){
+            addr_len = sizeof(data_addr);
+            int new_data_sd = 0;
+            char filename[256];
+            int c = sscanf(cmd, "%*s %256s", filename);
+            if (c != 1) {
+                printf("Wrong number of arguments.\n");
+                continue;
+            }
+
+            FILE *fp = fopen(filename, "r");
+
+            if (fp == NULL) {
+                printf("File does not exist.");
+                continue;
+            }
 
             //Sends command to server
             send(sd , cmd , strlen(cmd) , 0 );
-            //Reads reply from socket
-            valread = read(sd, buffer, 1024);
-            buffer[valread] = '\0';
-            //Displays if the command was successfully executed
-            printf("%s\n", buffer);
 
+            if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
+                perror("Failure to accept connection ");
+                continue;
+            }
+
+            int valread;
+
+            do { // Big files may require multiple reads
+                valread = fread(buffer, sizeof(char), BUF_SIZE, fp);
+                if (valread > 0) {
+                    buffer[valread] = '\0';
+                    send(new_data_sd, buffer, strlen(buffer), 0);
+                    printf("read and send cycle\n");
+                }
+            } while(valread == BUF_SIZE);
+
+
+            fclose(fp);
+            close(new_data_sd);
+            //printf("Socket closed\n");
         }
 
         //If command is "GET a file"
         else if (strcmp(userIn, "GET")==0){
-
+            addr_len = sizeof(data_addr);
+            int new_data_sd = 0;
             //Sends command to server
+            char filename[256];
+            int c = sscanf(cmd, "%*s %256s", filename);
+            if (c != 1) {
+                printf("Wrong number of arguments.\n");
+                continue;
+            }
+
             send(sd , cmd , strlen(cmd) , 0 );
             //Reads reply from socket
             valread = read(sd, buffer, 1024);
             buffer[valread] = '\0';
-            //Displays if the command was successfully executed
-            printf("%s\n", buffer);
 
+            //Displays if the command was successfully executed
+            //printf("Read from control socket: %s\n", buffer);
+            // Ali: please add error handling here, if buffer reads "wrong command usage" then declare error and skip the next part
+
+            if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
+                perror("Failure to accept connection ");
+                continue;
+            }
+
+            FILE *fp = fopen(filename, "w");
+
+            if (fp == NULL) {
+                perror("Failed to write file");
+                continue;
+            }
+
+            do { // Big files may require multiple reads
+                valread = recv(new_data_sd, buffer, BUF_SIZE, MSG_WAITALL); 
+                if (valread > 0) {
+                    buffer[valread] = '\0';
+                    fprintf(fp, "%s", buffer);
+                    printf("read and write cycle\n");
+                }
+            } while(valread == BUF_SIZE);
+
+            //valread = recv(new_data_sd, buffer, 1024, MSG_WAITALL); // Read data until socket is closed by the server
+            
+            fclose(fp);
+            close(new_data_sd);
         }
 
         //If command is "CD ..."
