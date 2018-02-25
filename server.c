@@ -237,7 +237,7 @@ void processGet(char* filename, int sd, struct sockaddr_in src_addr, char* buffe
         return;
     } 
 
-    sendMsg(sd, "existed");
+    sendMsg(sd, "existed\n");
 
     int valread;
 
@@ -301,11 +301,11 @@ void processCD(char* dir, int sd, sd_stat* stat_ptr) {
     sendMsg(sd, "successfully executed!\n");
 }
 
-void switchDIR(sd_stat* stat_ptr) { // Switch to user's cwd
+void switchDIR(sd_stat* stat_ptr, char* default_path) { // Switch to user's cwd
     if (chdir(stat_ptr->dir) == -1) {
         printf("Context switch failed\n");
-        chdir("/");
-        strcpy(stat_ptr->dir, "/"); // Switch back to default home directory
+        chdir(default_path);
+        strcpy(stat_ptr->dir, default_path); // Switch back to default home directory
     } else {
         printf("Context switched to: %s\n", stat_ptr->dir);
     }
@@ -313,13 +313,13 @@ void switchDIR(sd_stat* stat_ptr) { // Switch to user's cwd
 
 
 void parseMsg(char* buffer, int sd, int sd_index, sd_stat** sd2stat, User** users, 
-         int* client_socket, struct sockaddr_in src_addr) {
+         int* client_socket, struct sockaddr_in src_addr, char* default_path) {
     sd_stat* stat_ptr = sd2stat[sd_index];
     char *line, ins[50];
     int c;
     int connected = 1; // If the socket is still connected
     line = strtok(strdup(buffer), "\n");
-    switchDIR(stat_ptr); // Context switch into the current user's cwd
+    switchDIR(stat_ptr, default_path); // Context switch into the current user's cwd
     while (line != NULL && connected) {
         c = sscanf(line, "%50s", ins); // Look for instruction
         if (c == 1) {
@@ -348,7 +348,7 @@ void parseMsg(char* buffer, int sd, int sd_index, sd_stat** sd2stat, User** user
 
                 stat_ptr->user = NULL; //dissociate user from connection
                 stat_ptr->authenticated = 0; //reset authentication status
-                strcpy(stat_ptr->dir, "/"); //reset directory to default
+                strcpy(stat_ptr->dir, default_path); //reset directory to default
                
                 connected = 0; // So that the server stops reading messages
             } else if (strcmp(ins, "PUT") == 0) {
@@ -422,6 +422,9 @@ void parseMsg(char* buffer, int sd, int sd_index, sd_stat** sd2stat, User** user
 int main(int argc , char *argv[])
 {
 
+    char default_path[257];
+    getcwd(default_path, 256);
+
     char* usernames[max_clients] = {"chen", "ali"};
     char* passwords[max_clients] = {"123", "321"};
     int user_count = 2;
@@ -458,14 +461,14 @@ int main(int argc , char *argv[])
         usernames[i] = NULL;
         passwords[i] = NULL;
         users[i] = NULL;        
-        sd2stat[i] = new_stat(NULL, 0, "/");
+        sd2stat[i] = new_stat(NULL, 0, default_path);
     }
 
 
     for (i = 0; i<user_count; i++) {
         User* user = new_user(usernames[i], passwords[i]);
         users[i] = user;
-        sd2stat[i] = new_stat(user, 0, "/");
+        sd2stat[i] = new_stat(user, 0, default_path);
     }
   
     //create a master socket
@@ -605,7 +608,7 @@ int main(int argc , char *argv[])
                     sd_stat* stat_ptr = sd2stat[i];
                     stat_ptr->user = NULL; //dissociate user from connection
                     stat_ptr->authenticated = 0; //reset authentication status
-                    strcpy(stat_ptr->dir, "/"); //reset directory to default
+                    strcpy(stat_ptr->dir, default_path); //reset directory to default
                 }
 
                 else
@@ -614,7 +617,7 @@ int main(int argc , char *argv[])
                     //of the data read
                     buffer[valread] = '\0';
                     //openDataSocket(sd, data_addr);
-                    parseMsg(buffer, sd, i, sd2stat, users, client_socket, data_addr); //process msg
+                    parseMsg(buffer, sd, i, sd2stat, users, client_socket, data_addr, default_path); //process msg
                     //send(sd , buffer , strlen(buffer) , 0 );
                 }
             }
