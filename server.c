@@ -21,21 +21,24 @@
 
 typedef struct
 {
-    char* username;
-    char* password;
+    char username[256];
+    char password[256];
 } User;
 
 typedef struct
 {
     User* user;
     int authenticated;
-    char* dir;
+    char dir[512];
 } sd_stat;
 
 User* new_user(char* username, char* password) {
     User* result = malloc(sizeof(User));
-    result->username = username;
-    result->password = password;
+    strncpy(result->username, username, sizeof(result->username) - 1);
+    result->username[sizeof(result->username) - 1] = '\0'; // Prevent overflow
+
+    strncpy(result->password, password, sizeof(result->password) - 1);
+    result->password[sizeof(result->password) - 1] = '\0';
     return result;
 }
 
@@ -43,7 +46,9 @@ sd_stat* new_stat(User* user, int authenticated, char* dir) {
     sd_stat* result = malloc(sizeof(sd_stat));
     result->user = user;
     result->authenticated = authenticated;
-    result->dir = dir;
+    strncpy(result->dir, dir, sizeof(result->dir) - 1);
+    result->dir[sizeof(result->dir) - 1] = '\0';
+    return result;
 }
 
 void sendMsg(int sd, const char* msg) {
@@ -54,7 +59,6 @@ void sendMsg(int sd, const char* msg) {
 
 User* findUser(const char* uname, User** users) {
     for (int i=0; i<max_clients; i++) {
-        if (users[i] != NULL && users[i]->username != NULL) printf("Username: %s\n", users[i]->username);
         if (users[i] != NULL && users[i]->username != NULL && strcmp(uname, users[i]->username) == 0) return users[i];
     }
     return NULL;
@@ -286,6 +290,27 @@ void processPut(char* filename, int sd, struct sockaddr_in src_addr, char* buffe
     close(data_sd);
 }
 
+void processCD(char* dir, int sd, sd_stat* stat_ptr) {
+    if (chdir(dir) == -1) {
+        printf("CD failed\n");
+        sendMsg(sd, "wrong command usage!\n");
+        return;
+    }
+    getcwd(stat_ptr->dir, sizeof(stat_ptr->dir) - 1);
+    printf("CD to directory: %s\n", stat_ptr->dir);
+    sendMsg(sd, "successfully executed!\n");
+}
+
+void switchDIR(sd_stat* stat_ptr) {
+    if (chdir(stat_ptr->dir) == -1) {
+        printf("Context switch failed\n");
+        chdir("/");
+        strcpy(stat_ptr->dir, "/");
+    } else {
+        printf("Context switched to: %s\n", stat_ptr->dir);
+    }
+}
+
 
 void parseMsg(char* buffer, int sd, int sd_index, sd_stat** sd2stat, User** users, 
          int* client_socket, struct sockaddr_in src_addr) {
@@ -294,6 +319,7 @@ void parseMsg(char* buffer, int sd, int sd_index, sd_stat** sd2stat, User** user
     int c;
     int connected = 1; // If the socket is still connected
     line = strtok(strdup(buffer), "\n");
+    switchDIR(stat_ptr);
     while (line != NULL && connected) {
         c = sscanf(line, "%50s", ins); // Look for instruction
         if (c == 1) {
@@ -322,7 +348,7 @@ void parseMsg(char* buffer, int sd, int sd_index, sd_stat** sd2stat, User** user
 
                 stat_ptr->user = NULL; //dissociate user from connection
                 stat_ptr->authenticated = 0; //reset authentication status
-                stat_ptr->dir = "/"; //reset directory to default
+                strcpy(stat_ptr->dir, "/"); //reset directory to default
                
                 connected = 0; // So that the server stops reading messages
             } else if (strcmp(ins, "PUT") == 0) {
@@ -371,6 +397,15 @@ void parseMsg(char* buffer, int sd, int sd_index, sd_stat** sd2stat, User** user
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
+                char arg[256];
+                c = sscanf(line, "%*s %256s", arg);
+                if (c == 1) {
+                    printf("CD: %s \n", arg);
+                    processCD(arg, sd, stat_ptr);
+                } else {
+                    sendMsg(sd, "Wrong number of arguments. \n");
+                }
+
             } else {
                 sendMsg(sd, "Invalid FTP command: ");
                 printf("Invalid command: %s\n", line);
@@ -430,7 +465,6 @@ int main(int argc , char *argv[])
     for (i = 0; i<user_count; i++) {
         User* user = new_user(usernames[i], passwords[i]);
         users[i] = user;
-        printf("Username: %s\n", users[i]->username);
         sd2stat[i] = new_stat(user, 0, "/");
     }
   
@@ -571,7 +605,7 @@ int main(int argc , char *argv[])
                     sd_stat* stat_ptr = sd2stat[i];
                     stat_ptr->user = NULL; //dissociate user from connection
                     stat_ptr->authenticated = 0; //reset authentication status
-                    stat_ptr->dir = "/"; //reset directory to default
+                    strcpy(stat_ptr->dir, "/"); //reset directory to default
                 }
 
                 else
@@ -587,5 +621,10 @@ int main(int argc , char *argv[])
         }
     }
 
+    close(master_socket);
+    for (int i=0; i<max_clients; i++) { // Free memory allocated to structs
+        if(users[i] != NULL) free(users[i]);
+        if(sd2stat[i] != NULL) free(sd2stat[i]);
+    }
     return 0;
 }

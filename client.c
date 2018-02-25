@@ -147,7 +147,7 @@ int main(int argc, char const *argv[])
                 if (valread > 0) {
                     //buffer[valread] = '\0';
                     send(new_data_sd, buffer, valread, 0);
-                    printf("read and send cycle\n");
+                    //printf("read and send cycle\n");
                 }
             } while(valread == BUF_SIZE);
 
@@ -197,7 +197,7 @@ int main(int argc, char const *argv[])
                     //buffer[valread] = '\0';
                     //fprintf(fp, "%s", buffer);
                     fwrite(buffer, 1, valread, fp);
-                    printf("read and write cycle\n");
+                    //printf("read and write cycle\n");
                 }
             } while(valread == BUF_SIZE);
 
@@ -277,6 +277,7 @@ int main(int argc, char const *argv[])
 
     close(sd);
     close(data_sd);
+
 
     return 0;
 }
