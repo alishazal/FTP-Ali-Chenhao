@@ -28,9 +28,16 @@ dumpNodeConnections(net.hosts)
 print "Testing network connectivity"
 h1 = net.get('h1')
 h2 = net.get('h2')
+h3 = net.get('h3')
 print("ping h2")
 #CLI(net)
 print h1.cmd('ping -c 3 %s' %  h2.IP())
 #net.pingAll()
+print h1.cmd("./FTPserver")
+
+print h2.cmd("./FTPclient 127.0.0.1 8080")
+
+print h2.cmd("LS")
+
 net.stop()
 
