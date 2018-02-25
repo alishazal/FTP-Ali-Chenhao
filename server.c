@@ -296,16 +296,16 @@ void processCD(char* dir, int sd, sd_stat* stat_ptr) {
         sendMsg(sd, "wrong command usage!\n");
         return;
     }
-    getcwd(stat_ptr->dir, sizeof(stat_ptr->dir) - 1);
+    getcwd(stat_ptr->dir, sizeof(stat_ptr->dir) - 1); // Change user's cwd to after cd
     printf("CD to directory: %s\n", stat_ptr->dir);
     sendMsg(sd, "successfully executed!\n");
 }
 
-void switchDIR(sd_stat* stat_ptr) {
+void switchDIR(sd_stat* stat_ptr) { // Switch to user's cwd
     if (chdir(stat_ptr->dir) == -1) {
         printf("Context switch failed\n");
         chdir("/");
-        strcpy(stat_ptr->dir, "/");
+        strcpy(stat_ptr->dir, "/"); // Switch back to default home directory
     } else {
         printf("Context switched to: %s\n", stat_ptr->dir);
     }
@@ -319,7 +319,7 @@ void parseMsg(char* buffer, int sd, int sd_index, sd_stat** sd2stat, User** user
     int c;
     int connected = 1; // If the socket is still connected
     line = strtok(strdup(buffer), "\n");
-    switchDIR(stat_ptr);
+    switchDIR(stat_ptr); // Context switch into the current user's cwd
     while (line != NULL && connected) {
         c = sscanf(line, "%50s", ins); // Look for instruction
         if (c == 1) {
