@@ -19,6 +19,8 @@ int main(int argc, char const *argv[])
     char cmd[256];
     char userIn[256];
     char msg[256];
+    char command[256];
+
 
     //Takes port from argv
     int PORT = atoi(argv[2]);
@@ -134,13 +136,19 @@ int main(int argc, char const *argv[])
 
             //Sends command to server
             send(sd , cmd , strlen(cmd) , 0 );
+            valread = read(sd, buffer, 1024);
+            buffer[valread] = '\0';
 
+            if (strcmp(buffer, "Authenticate first\0")==0)
+            {
+                printf("%s\n", buffer);
+            }
+
+            else{
             if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
                 perror("Failure to accept connection ");
                 continue;
             }
-
-            int valread;
 
             do { // Big files may require multiple reads
                 valread = fread(buffer, 1, BUF_SIZE, fp);
@@ -155,6 +163,7 @@ int main(int argc, char const *argv[])
             fclose(fp);
             close(new_data_sd);
             //printf("Socket closed\n");
+        }
         }
 
         //If command is "GET a file"
@@ -173,37 +182,48 @@ int main(int argc, char const *argv[])
             //Reads reply from socket
             valread = read(sd, buffer, 1024);
             buffer[valread] = '\0';
+            if (strcmp(buffer, "Authenticate first\0")==0)
+            {
+                printf("%s\n", buffer);
+            }
 
             //Displays if the command was successfully executed
             //printf("Read from control socket: %s\n", buffer);
             // Ali: please add error handling here, if buffer reads "wrong command usage" then declare error and skip the next part
+            else{
+            if (strcmp(buffer,"nonexisted\n\0")==0){
+                printf("Filename: no such file on server\n");
+            } 
 
-            if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
-                perror("Failure to accept connection ");
-                continue;
-            }
-
-            FILE *fp = fopen(filename, "w");
-
-            if (fp == NULL) {
-                perror("Failed to write file");
-                continue;
-            }
-
-            do { // Big files may require multiple reads
-                valread = recv(new_data_sd, buffer, BUF_SIZE, MSG_WAITALL); 
-                //printf("Bytes read: %d\n", valread);
-                if (valread > 0) {
-                    //buffer[valread] = '\0';
-                    //fprintf(fp, "%s", buffer);
-                    fwrite(buffer, 1, valread, fp);
-                    //printf("read and write cycle\n");
+            else{
+                if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
+                    perror("Failure to accept connection ");
+                    continue;
                 }
-            } while(valread == BUF_SIZE);
 
-            //valread = recv(new_data_sd, buffer, 1024, MSG_WAITALL); // Read data until socket is closed by the server
-            fclose(fp);
-            close(new_data_sd);
+                FILE *fp = fopen(filename, "w");
+
+                if (fp == NULL) {
+                    perror("Failed to write file");
+                    continue;
+                }
+
+                do { // Big files may require multiple reads
+                    valread = recv(new_data_sd, buffer, BUF_SIZE, MSG_WAITALL); 
+                    //printf("Bytes read: %d\n", valread);
+                    if (valread > 0) {
+                        //buffer[valread] = '\0';
+                        //fprintf(fp, "%s", buffer);
+                        fwrite(buffer, 1, valread, fp);
+                        //printf("read and write cycle\n");
+                    }
+                } while(valread == BUF_SIZE);
+
+                //valread = recv(new_data_sd, buffer, 1024, MSG_WAITALL); // Read data until socket is closed by the server
+                fclose(fp);
+                close(new_data_sd);
+            }
+        }
         }
 
         //If command is "CD ..."
@@ -228,11 +248,15 @@ int main(int argc, char const *argv[])
             //Reads reply from socket
             valread = read(sd, buffer, 1024);
             buffer[valread] = '\0';
+            if (strcmp(buffer, "Authenticate first\0")==0)
+            {
+                printf("%s\n", buffer);
+            }
 
             //Displays if the command was successfully executed
             //printf("Read from control socket: %s\n", buffer);
             // Ali: please add error handling here, if buffer reads "wrong command usage" then declare error and skip the next part
-
+            else{
             if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
                 perror("Failure to accept connection ");
                 continue;
@@ -241,7 +265,21 @@ int main(int argc, char const *argv[])
             valread = recv(new_data_sd, buffer, 1024, MSG_WAITALL); // Read data until socket is closed by the server
             buffer[valread] = '\0';
             printf("%s\n", buffer);
+            
             close(new_data_sd);
+        }
+        }
+
+        else if (strcmp(userIn, "!LS")==0){
+            for (int i=0; i<strlen(cmd) - 1; i++) {
+                if (cmd[i] == '!' && cmd[i+1] == 'L' && cmd[i+2] == 'S') {
+                    cmd[i] = 'l';
+                    cmd[i+1] = 's';
+                    cmd[i+2] = ' ';
+                    break;
+                }
+            }
+            system(cmd);
         }
 
         //If command is "PWD"
@@ -253,11 +291,15 @@ int main(int argc, char const *argv[])
             //Reads reply from socket
             valread = read(sd, buffer, 1024);
             buffer[valread] = '\0';
+            if (strcmp(buffer, "Authenticate first\0")==0)
+            {
+                printf("%s\n", buffer);
+            }
 
             //Displays if the command was successfully executed
             //printf("Read from control socket: %s\n", buffer);
             // Ali: please add error handling here, if buffer reads "wrong command usage" then declare error and skip the next part
-
+            else {
             if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
                 perror("Failure to accept connection ");
                 continue;
@@ -268,16 +310,44 @@ int main(int argc, char const *argv[])
             printf("%s\n", buffer);
             close(new_data_sd);
         }
+        }
+
+        else if (strcmp(userIn, "!PWD")==0){
+            for (int i=0; i<strlen(cmd) - 1; i++) {
+                if (cmd[i] == '!' && cmd[i+1] == 'P' && cmd[i+2] == 'W'
+                    && cmd[i+3] == 'D') {
+                    cmd[i] = 'p';
+                    cmd[i+1] = 'w';
+                    cmd[i+2] = 'd';
+                    cmd[i+3] = ' ';
+                    break;
+                }
+            }
+            system(cmd);
+        }
+
+        else if (strcmp(userIn, "!CD")==0){
+            for (int i=0; i<strlen(cmd) - 1; i++) {
+                if (cmd[i] == '!' && cmd[i+1] == 'C' && cmd[i+2] == 'D') {
+                    cmd[i] = ' ';
+                    cmd[i+1] = ' ';
+                    cmd[i+2] = ' ';
+                    break;
+                }
+            }
+            printf("%s",cmd);
+            chdir(cmd);
+        }
+
+        else if (strcmp(userIn, "QUIT")==0){
+            close(sd);
+            close(data_sd);
+            return 0;
+        }
 
         //Doesn't accept any other commands
         else {
             printf("An invalid ftp command.");
         }
     }
-
-    close(sd);
-    close(data_sd);
-
-
-    return 0;
 }
