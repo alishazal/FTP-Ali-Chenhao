@@ -143,10 +143,10 @@ int main(int argc, char const *argv[])
             int valread;
 
             do { // Big files may require multiple reads
-                valread = fread(buffer, sizeof(char), BUF_SIZE, fp);
+                valread = fread(buffer, 1, BUF_SIZE, fp);
                 if (valread > 0) {
-                    buffer[valread] = '\0';
-                    send(new_data_sd, buffer, strlen(buffer), 0);
+                    //buffer[valread] = '\0';
+                    send(new_data_sd, buffer, valread, 0);
                     printf("read and send cycle\n");
                 }
             } while(valread == BUF_SIZE);
@@ -192,15 +192,16 @@ int main(int argc, char const *argv[])
 
             do { // Big files may require multiple reads
                 valread = recv(new_data_sd, buffer, BUF_SIZE, MSG_WAITALL); 
+                //printf("Bytes read: %d\n", valread);
                 if (valread > 0) {
-                    buffer[valread] = '\0';
-                    fprintf(fp, "%s", buffer);
+                    //buffer[valread] = '\0';
+                    //fprintf(fp, "%s", buffer);
+                    fwrite(buffer, 1, valread, fp);
                     printf("read and write cycle\n");
                 }
             } while(valread == BUF_SIZE);
 
             //valread = recv(new_data_sd, buffer, 1024, MSG_WAITALL); // Read data until socket is closed by the server
-            
             fclose(fp);
             close(new_data_sd);
         }

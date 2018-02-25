@@ -19,6 +19,19 @@
 
 // Based in part on code found on geeksforgeeks.com
 
+struct user
+{
+    char* username;
+    char* password;
+};
+
+struct sd_stat
+{
+    struct user* user;
+    int authenticated;
+    char* dir;
+};
+
 void sendMsg(int sd, const char* msg) {
     if (send(sd, msg, strlen(msg), 0) != strlen(msg)) {
         perror("send");
@@ -211,9 +224,10 @@ void processGet(char* filename, int sd, struct sockaddr_in src_addr, char* buffe
 
     do { // Big files may require multiple reads
         valread = fread(buffer, sizeof(char), BUF_SIZE, fp);
+        printf("Bytes read: %d\n", valread);
         if (valread > 0) {
-            buffer[valread] = '\0';
-            sendMsg(data_sd, buffer);
+            //buffer[valread] = '\0';
+            send(data_sd, buffer, valread, 0);
             printf("read and send cycle\n");
         }
     } while(valread == BUF_SIZE);
@@ -244,8 +258,9 @@ void processPut(char* filename, int sd, struct sockaddr_in src_addr, char* buffe
     do { // Big files may require multiple reads
         valread = recv(data_sd, buffer, BUF_SIZE, MSG_WAITALL); 
         if (valread > 0) {
-            buffer[valread] = '\0';
-            fprintf(fp, "%s", buffer);
+            //buffer[valread] = '\0';
+            //fprintf(fp, "%s", buffer);
+            fwrite(buffer, 1, valread, fp);
             printf("read and write cycle\n");
         }
     } while(valread == BUF_SIZE);
