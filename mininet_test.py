@@ -9,6 +9,7 @@ from mininet.net import Mininet
 from mininet.util import dumpNodeConnections
 from mininet.log import setLogLevel
 from mininet.cli import CLI
+import time
 
 class SingleSwitchTopo(Topo):
     "Single switch connected to n hosts."
@@ -35,9 +36,12 @@ print h1.cmd('ping -c 3 %s' %  h2.IP())
 #net.pingAll()
 print h1.cmd("./FTPserver")
 
+print "server started"
+time.sleep(3)
+
 print h2.cmd("./FTPclient 127.0.0.1 8080")
 
-print h2.cmd("LS")
+print h2.cmd("USER chen")
 
 net.stop()
 
