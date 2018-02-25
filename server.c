@@ -19,18 +19,32 @@
 
 // Based in part on code found on geeksforgeeks.com
 
-struct user
+typedef struct
 {
     char* username;
     char* password;
-};
+} User;
 
-struct sd_stat
+typedef struct
 {
-    struct user* user;
+    User* user;
     int authenticated;
     char* dir;
-};
+} sd_stat;
+
+User* new_user(char* username, char* password) {
+    User* result = malloc(sizeof(User));
+    result->username = username;
+    result->password = password;
+    return result;
+}
+
+sd_stat* new_stat(User* user, int authenticated, char* dir) {
+    sd_stat* result = malloc(sizeof(sd_stat));
+    result->user = user;
+    result->authenticated = authenticated;
+    result->dir = dir;
+}
 
 void sendMsg(int sd, const char* msg) {
     if (send(sd, msg, strlen(msg), 0) != strlen(msg)) {
@@ -38,33 +52,34 @@ void sendMsg(int sd, const char* msg) {
     }
 }
 
-int findUser(const char* uname, char** usernames) {
+User* findUser(const char* uname, User** users) {
     for (int i=0; i<max_clients; i++) {
-        if (usernames[i] != NULL && strcmp(uname, usernames[i]) == 0) return i;
+        if (users[i] != NULL && users[i]->username != NULL) printf("Username: %s\n", users[i]->username);
+        if (users[i] != NULL && users[i]->username != NULL && strcmp(uname, users[i]->username) == 0) return users[i];
     }
-    return -1;
+    return NULL;
 }
 
-void processUser(const char* uname, char** usernames, int sd, int sd_index, int* sd2user) {
-    int result = findUser(uname, usernames);
-    if (result == -1) {
+void processUser(const char* uname, User** users, int sd, sd_stat* stat_ptr) {
+    User* result = findUser(uname, users);
+    if (result == NULL) {
         printf("Username %s does not exist\n", uname);
         sendMsg(sd, "Username does not exist");
     } else {
         printf("Username %s ok, password required\n", uname);
-        sd2user[sd_index] = result;
+        stat_ptr->user = result;
         sendMsg(sd, "Username OK, password required");
     }
 }
 
-void processPass(const char* pass, char** passwords, int sd, int sd_index, int* sd2user, int* authenticated) {
-    int user_index = sd2user[sd_index];
-    if (user_index == -1) {
+void processPass(const char* pass, int sd, sd_stat* stat_ptr) {
+    User* user_ptr = stat_ptr->user;
+    if (user_ptr == NULL) {
         printf("set USER first\n");
         sendMsg(sd, "set USER first");
     } else {
-        if (passwords[user_index] != NULL && strcmp(pass, passwords[user_index]) == 0) {
-            authenticated[sd_index] = 1;
+        if (user_ptr->password != NULL && strcmp(pass, user_ptr->password) == 0) {
+            stat_ptr->authenticated = 1;
             printf("Authentication complete\n");
             sendMsg(sd, "Authentication complete");
         } else {
@@ -272,8 +287,9 @@ void processPut(char* filename, int sd, struct sockaddr_in src_addr, char* buffe
 }
 
 
-void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticated, char** usernames, 
-        char** passwords, int* client_socket, struct sockaddr_in src_addr) {
+void parseMsg(char* buffer, int sd, int sd_index, sd_stat** sd2stat, User** users, 
+         int* client_socket, struct sockaddr_in src_addr) {
+    sd_stat* stat_ptr = sd2stat[sd_index];
     char *line, ins[50];
     int c;
     int connected = 1; // If the socket is still connected
@@ -286,7 +302,7 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
                 c = sscanf(line, "%*s %256s", arg);
                 if (c == 1) {
                     printf("User %s wants to log in. \n", arg);
-                    processUser(arg, usernames, sd, sd_index, sd2user);
+                    processUser(arg, users, sd, stat_ptr);
                 } else {
                     sendMsg(sd, "Wrong number of arguments. \n");
                 }
@@ -295,7 +311,7 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
                 c = sscanf(line, "%*s %256s", arg);
                 if (c == 1) {
                     printf("Password: %s \n", arg);
-                    processPass(arg, passwords, sd, sd_index, sd2user, authenticated);
+                    processPass(arg, sd, stat_ptr);
                 } else {
                     sendMsg(sd, "Wrong number of arguments. \n");
                 }
@@ -303,11 +319,14 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
                 //Close the socket and mark as 0 in list for reuse
                 close( sd );
                 client_socket[sd_index] = 0;
-                sd2user[sd_index] = -1; //dissociate user from connection
-                authenticated[sd_index] = 0; //reset authentication status
+
+                stat_ptr->user = NULL; //dissociate user from connection
+                stat_ptr->authenticated = 0; //reset authentication status
+                stat_ptr->dir = "/"; //reset directory to default
+               
                 connected = 0; // So that the server stops reading messages
             } else if (strcmp(ins, "PUT") == 0) {
-                if (!authenticated[sd_index]) {
+                if (!stat_ptr->authenticated) {
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
@@ -320,7 +339,7 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
                     sendMsg(sd, "Wrong number of arguments. \n");
                 }
             } else if (strcmp(ins, "GET") == 0) {
-                if (!authenticated[sd_index]) {
+                if (!stat_ptr->authenticated) {
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
@@ -333,7 +352,7 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
                     sendMsg(sd, "Wrong number of arguments. \n");
                 }
             } else if (strcmp(ins, "LS") == 0) {
-                if (!authenticated[sd_index]) {
+                if (!stat_ptr->authenticated) {
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
@@ -341,14 +360,14 @@ void parseMsg(char* buffer, int sd, int sd_index, int* sd2user, int* authenticat
                 processLS(line, sd, src_addr);
 
             } else if (strcmp(ins, "PWD") == 0) {
-                if (!authenticated[sd_index]) {
+                if (!stat_ptr->authenticated) {
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
                 processPWD(line, sd, src_addr);
 
             } else if (strcmp(ins, "CD") == 0) {
-                if (!authenticated[sd_index]) {
+                if (!stat_ptr->authenticated) {
                     sendMsg(sd, "Authenticate first");
                     return;
                 }
@@ -371,6 +390,8 @@ int main(int argc , char *argv[])
     char* usernames[max_clients] = {"chen", "ali"};
     char* passwords[max_clients] = {"123", "321"};
     int user_count = 2;
+    User* users[max_clients];
+
 
 
     int opt = TRUE;
@@ -387,25 +408,32 @@ int main(int argc , char *argv[])
     //welcome message
     char *message = "Welcome to Ali and Chen's FTP server! \n";
 
-    int authenticated[max_clients]; //map of whether a connection has authenticated
-    int sd2user[max_clients]; //map from socket to user
-    char* sd2dir[max_clients]; //map from socket to directory
+    sd_stat* sd2stat[max_clients]; //map from socket to user
 
 
     //initialise all client_socket[] to 0 so not checked
     for (i = 0; i < max_clients; i++)
     {
         client_socket[i] = 0;
-        authenticated[i] = 0;
-        sd2user[i] = -1;
-        sd2dir[i] = NULL;
+        //authenticated[i] = 0;
+        //sd2user[i] = -1;
     }
 
     for (i = user_count; i<max_clients; i++) {
         usernames[i] = NULL;
         passwords[i] = NULL;
+        users[i] = NULL;        
+        sd2stat[i] = new_stat(NULL, 0, "/");
     }
 
+
+    for (i = 0; i<user_count; i++) {
+        User* user = new_user(usernames[i], passwords[i]);
+        users[i] = user;
+        printf("Username: %s\n", users[i]->username);
+        sd2stat[i] = new_stat(user, 0, "/");
+    }
+  
     //create a master socket
     if( (master_socket = socket(AF_INET , SOCK_STREAM , 0)) == 0)
     {
@@ -540,8 +568,10 @@ int main(int argc , char *argv[])
                     //Close the socket and mark as 0 in list for reuse
                     close( sd );
                     client_socket[i] = 0;
-                    sd2user[i] = -1; //dissociate user from connection
-                    authenticated[i] = 0; //reset authentication status
+                    sd_stat* stat_ptr = sd2stat[i];
+                    stat_ptr->user = NULL; //dissociate user from connection
+                    stat_ptr->authenticated = 0; //reset authentication status
+                    stat_ptr->dir = "/"; //reset directory to default
                 }
 
                 else
@@ -550,7 +580,7 @@ int main(int argc , char *argv[])
                     //of the data read
                     buffer[valread] = '\0';
                     //openDataSocket(sd, data_addr);
-                    parseMsg(buffer, sd, i, sd2user, authenticated, usernames, passwords, client_socket, data_addr); //process msg
+                    parseMsg(buffer, sd, i, sd2stat, users, client_socket, data_addr); //process msg
                     //send(sd , buffer , strlen(buffer) , 0 );
                 }
             }
