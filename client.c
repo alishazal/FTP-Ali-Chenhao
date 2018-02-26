@@ -19,7 +19,6 @@ int main(int argc, char const *argv[])
     char cmd[256];
     char userIn[256];
     char msg[256];
-    char command[256];
 
 
     //Takes port from argv
@@ -327,6 +326,7 @@ int main(int argc, char const *argv[])
         }
 
         else if (strcmp(userIn, "!CD")==0){
+            char dir[512];
             for (int i=0; i<strlen(cmd) - 1; i++) {
                 if (cmd[i] == '!' && cmd[i+1] == 'C' && cmd[i+2] == 'D') {
                     cmd[i] = ' ';
@@ -335,8 +335,17 @@ int main(int argc, char const *argv[])
                     break;
                 }
             }
-            printf("%s",cmd);
-            chdir(cmd);
+
+            while(sscanf(cmd, "%256s", dir)==0){
+            }
+    
+            if (chdir(dir) == -1) {
+            printf("CD failed. Wrong command usage!\n");
+        }   
+            else{
+            chdir(dir);
+            printf("Successfully executed!");
+        }
         }
 
         else if (strcmp(userIn, "QUIT")==0){
