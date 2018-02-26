@@ -344,7 +344,10 @@ int main(int argc, char const *argv[])
         }   
             else{
             chdir(dir);
-            printf("Successfully executed!");
+            printf("Successfully executed!\n");
+            if (getcwd(dir, sizeof(dir)) != NULL){
+                printf("CD to directory: %s\n", dir);
+            }
         }
         }
 
