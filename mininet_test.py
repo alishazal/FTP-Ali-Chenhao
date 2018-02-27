@@ -34,12 +34,12 @@ print("ping h2")
 #CLI(net)
 print h1.cmd('ping -c 3 %s' %  h2.IP())
 #net.pingAll()
-print h1.cmd("./FTPserver")
+print h1.cmd("./FTPserver &> server_log.txt &")
 
 print "server started"
 time.sleep(3)
 
-print h2.cmd("./FTPclient 127.0.0.1 8080")
+print h2.cmd("./FTPclient %s 8080 &> client_log.txt &" % (h1.IP()))
 
 print h2.cmd("USER chen")
 
