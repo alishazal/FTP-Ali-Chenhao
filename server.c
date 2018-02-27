@@ -272,6 +272,8 @@ void processPut(char* filename, int sd, struct sockaddr_in src_addr, char* buffe
         return;
     }
 
+    sendMsg(sd, "OK");
+
     int valread;
 
     do { // Big files may require multiple reads
