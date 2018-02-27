@@ -5,7 +5,6 @@
 #include <string.h>
 #include <unistd.h>   //close
 #include <arpa/inet.h>    //close
-
 #define BUF_SIZE 1024
 
 int main(int argc, char const *argv[])
@@ -128,6 +127,7 @@ int main(int argc, char const *argv[])
 
             FILE *fp = fopen(filename, "r");
 
+            //Check if file exists
             if (fp == NULL) {
                 printf("File does not exist.");
                 continue;
@@ -138,16 +138,19 @@ int main(int argc, char const *argv[])
             valread = read(sd, buffer, 1024);
             buffer[valread] = '\0';
 
+            //Checks if authentication is done
             if (strcmp(buffer, "Authenticate first\0")==0)
             {
                 printf("%s\n", buffer);
             }
 
+            //Establish data connection
             else{
             if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
                 perror("Failure to accept connection ");
                 continue;
             }
+
 
             do { // Big files may require multiple reads
                 valread = fread(buffer, 1, BUF_SIZE, fp);
@@ -169,6 +172,7 @@ int main(int argc, char const *argv[])
         else if (strcmp(userIn, "GET")==0){
             addr_len = sizeof(data_addr);
             int new_data_sd = 0;
+
             //Sends command to server
             char filename[256];
             int c = sscanf(cmd, "%*s %256s", filename);
@@ -178,6 +182,7 @@ int main(int argc, char const *argv[])
             }
 
             send(sd , cmd , strlen(cmd) , 0 );
+
             //Reads reply from socket
             valread = read(sd, buffer, 1024);
             buffer[valread] = '\0';
@@ -186,12 +191,11 @@ int main(int argc, char const *argv[])
                 printf("%s\n", buffer);
             }
 
-            //Displays if the command was successfully executed
-            //printf("Read from control socket: %s\n", buffer);
-            // Ali: please add error handling here, if buffer reads "wrong command usage" then declare error and skip the next part
             else{
-            if (strcmp(buffer,"nonexisted\n\0")==0){
-                printf("Filename: no such file on server\n");
+
+            	//Does the file exist?
+            	if (strcmp(buffer,"nonexisted\n\0")==0){
+                	printf("Filename: no such file on server\n");
             } 
 
             else{
@@ -238,6 +242,37 @@ int main(int argc, char const *argv[])
 
         }
 
+        else if (strcmp(userIn, "!CD")==0){
+
+            char dir[512];
+
+            //Convert !CD to blank space
+            for (int i=0; i<strlen(cmd) - 1; i++) {
+                if (cmd[i] == '!' && cmd[i+1] == 'C' && cmd[i+2] == 'D') {
+                    cmd[i] = ' ';
+                    cmd[i+1] = ' ';
+                    cmd[i+2] = ' ';
+                    break;
+                }
+            }
+
+            //Scan all the words from cmd, ignoring blank spaces
+            while(sscanf(cmd, "%256s", dir)==0){
+
+            }
+    
+            if (chdir(dir) == -1) {
+            	printf("CD failed. Wrong command usage!\n");
+        	}   
+            else{
+	            chdir(dir);
+	            printf("Successfully executed!\n");
+	            if (getcwd(dir, sizeof(dir)) != NULL){
+	                printf("CD to directory: %s\n", dir);
+	            }
+        	}
+        }
+
         //If command is "LS ..."
         else if (strcmp(userIn, "LS")==0){
             addr_len = sizeof(data_addr);
@@ -252,23 +287,21 @@ int main(int argc, char const *argv[])
                 printf("%s\n", buffer);
             }
 
-            //Displays if the command was successfully executed
-            //printf("Read from control socket: %s\n", buffer);
-            // Ali: please add error handling here, if buffer reads "wrong command usage" then declare error and skip the next part
             else{
-            if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
+            	if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
                 perror("Failure to accept connection ");
                 continue;
             }
 
-            valread = recv(new_data_sd, buffer, 1024, MSG_WAITALL); // Read data until socket is closed by the server
-            buffer[valread] = '\0';
-            printf("%s\n", buffer);
+            	valread = recv(new_data_sd, buffer, 1024, MSG_WAITALL); // Read data until socket is closed by the server
+            	buffer[valread] = '\0';
+            	printf("%s\n", buffer);
             
-            close(new_data_sd);
-        }
+            	close(new_data_sd);
+        	}
         }
 
+        //Converting !LS to ls to put into system()
         else if (strcmp(userIn, "!LS")==0){
             for (int i=0; i<strlen(cmd) - 1; i++) {
                 if (cmd[i] == '!' && cmd[i+1] == 'L' && cmd[i+2] == 'S') {
@@ -295,22 +328,20 @@ int main(int argc, char const *argv[])
                 printf("%s\n", buffer);
             }
 
-            //Displays if the command was successfully executed
-            //printf("Read from control socket: %s\n", buffer);
-            // Ali: please add error handling here, if buffer reads "wrong command usage" then declare error and skip the next part
             else {
-            if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
+            	if ((new_data_sd = accept(data_sd, (struct sockaddr *)&data_addr, (socklen_t*)&addr_len)) == 0) {
                 perror("Failure to accept connection ");
                 continue;
             }
 
-            valread = recv(new_data_sd, buffer, 1024, MSG_WAITALL); // Read data until socket is closed by the server
-            buffer[valread] = '\0';
-            printf("%s\n", buffer);
-            close(new_data_sd);
-        }
+	            valread = recv(new_data_sd, buffer, 1024, MSG_WAITALL); // Read data until socket is closed by the server
+	            buffer[valread] = '\0';
+	            printf("%s\n", buffer);
+	            close(new_data_sd);
+        	}
         }
 
+        //Convert !PWD to pwd for system()
         else if (strcmp(userIn, "!PWD")==0){
             for (int i=0; i<strlen(cmd) - 1; i++) {
                 if (cmd[i] == '!' && cmd[i+1] == 'P' && cmd[i+2] == 'W'
@@ -323,32 +354,6 @@ int main(int argc, char const *argv[])
                 }
             }
             system(cmd);
-        }
-
-        else if (strcmp(userIn, "!CD")==0){
-            char dir[512];
-            for (int i=0; i<strlen(cmd) - 1; i++) {
-                if (cmd[i] == '!' && cmd[i+1] == 'C' && cmd[i+2] == 'D') {
-                    cmd[i] = ' ';
-                    cmd[i+1] = ' ';
-                    cmd[i+2] = ' ';
-                    break;
-                }
-            }
-
-            while(sscanf(cmd, "%256s", dir)==0){
-            }
-    
-            if (chdir(dir) == -1) {
-            printf("CD failed. Wrong command usage!\n");
-        }   
-            else{
-            chdir(dir);
-            printf("Successfully executed!\n");
-            if (getcwd(dir, sizeof(dir)) != NULL){
-                printf("CD to directory: %s\n", dir);
-            }
-        }
         }
 
         else if (strcmp(userIn, "QUIT")==0){
