@@ -448,20 +448,20 @@ int main(int argc , char *argv[])
         client_socket[i] = 0;
         //authenticated[i] = 0;
         //sd2user[i] = -1;
+        sd2stat[i] = new_stat(NULL, 0, default_path);
     }
 
     for (i = user_count; i<max_clients; i++) {
         usernames[i] = NULL;
         passwords[i] = NULL;
         users[i] = NULL;        
-        sd2stat[i] = new_stat(NULL, 0, default_path);
     }
 
 
     for (i = 0; i<user_count; i++) {
         User* user = new_user(usernames[i], passwords[i]);
         users[i] = user;
-        sd2stat[i] = new_stat(user, 0, default_path);
+        //sd2stat[i] = new_stat(user, 0, default_path);
     }
   
     //create a master socket

@@ -11,7 +11,7 @@ eval "exec 8>c$idx"
 echo -ne "nonsense\n" >&8
 echo -ne "CD sandbox/ftp_server_dirs/client_dir_c$idx\n" >&8
 echo -ne "USER nonsense\n" >&8
-echo -ne "PASS nonsense\n" >&8
+echo -ne "PASS 123\n" >&8
 echo -ne "USER chen\n" >&8
 echo -ne "PASS 321\n" >&8
 echo -ne "PASS 123\n" >&8
