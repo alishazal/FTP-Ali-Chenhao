@@ -14,7 +14,7 @@ To run the client, write in the command line "./FTPclient 127.0.0.1 8080".
 We have currently made two users "chen" and "ali". The password for chen is "123" and for ali is "321".
 
 ## Final Submission:
- - ###How To Use
+ - ### How To Use
 The client and server code is in the .c files. Use Makefile to build the FTPclient and FTPserver executables. Run the server by simply writing in the command line "./FTPserver". To run the client, write in the command line "./FTPclient 127.0.0.1 8080". Then, use the commands explained below.
 
 - ### Client Design
