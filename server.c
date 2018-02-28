@@ -128,7 +128,10 @@ int openDataSocket(int sd, struct sockaddr_in src_addr) {
     }
 
     if (connect(new_sd, (struct sockaddr *)&target_addr, sizeof(target_addr)) < 0) { // Connect to target
+
         perror("Connection Failed \n");
+        close(new_sd);
+
         return -1;
     }
 
