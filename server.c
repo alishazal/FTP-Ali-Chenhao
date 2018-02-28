@@ -227,6 +227,13 @@ void processPWD(char* command, int sd, struct sockaddr_in src_addr) {
 void processGet(char* filename, int sd, struct sockaddr_in src_addr, char* buffer) {
     FILE *fp = fopen(filename, "r");
 
+    if (!fp) {
+        perror("File does not exist.");
+        sendMsg(sd, "nonexisted\n");
+        //close(data_sd);
+        return;
+    } 
+
     int data_sd = openDataSocket(sd, src_addr);
 
     if (data_sd == -1) {
@@ -235,20 +242,13 @@ void processGet(char* filename, int sd, struct sockaddr_in src_addr, char* buffe
         return;
     }
 
-    if (!fp) {
-        perror("File does not exist.");
-        sendMsg(sd, "nonexisted\n");
-        close(data_sd);
-        return;
-    } 
-
     sendMsg(sd, "existed\n");
 
     int valread;
 
     do { // Big files may require multiple reads
         valread = fread(buffer, sizeof(char), BUF_SIZE, fp);
-        printf("Bytes read: %d\n", valread);
+        //printf("Bytes read: %d\n", valread);
         if (valread > 0) {
             //buffer[valread] = '\0';
             send(data_sd, buffer, valread, 0);
