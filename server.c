@@ -106,27 +106,12 @@ int openDataSocket(int sd, struct sockaddr_in src_addr) {
     }
     target_addr = user_addr;
     target_addr.sin_port = htons(ntohs(user_addr.sin_port) + 1);
-    /*printf("User connection: ip %s , port %d \n" ,
-                          inet_ntoa(user_addr.sin_addr) , ntohs(user_addr.sin_port));
-    printf("Target connection: ip %s , port %d \n" ,
-                          inet_ntoa(target_addr.sin_addr) , ntohs(target_addr.sin_port));*/
 
     if( (new_sd = socket(AF_INET , SOCK_STREAM , 0)) == 0) { // Create new socket
         perror("socket creation failed\n");
         return -1;
     }
-/*
-    if(setsockopt(new_sd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, // Needs to set SO_REUSEADDR to allow immediate re-bind
-          sizeof(opt)) < 0 ) {
-        perror("setsockopt");
-        return -1;
-    }
-
-    if (bind(new_sd, (struct sockaddr *)&src_addr, sizeof(src_addr)) < 0) { // Bind socket to source port
-        perror("bind failed\n");
-        return -1;
-    }
-*/
+    
     if (connect(new_sd, (struct sockaddr *)&target_addr, sizeof(target_addr)) < 0) { // Connect to target
 
         perror("Connection Failed \n");
@@ -286,8 +271,7 @@ void processPut(char* filename, int sd, struct sockaddr_in src_addr, char* buffe
     do { // Big files may require multiple reads
         valread = recv(data_sd, buffer, BUF_SIZE, MSG_WAITALL); 
         if (valread > 0) {
-            //buffer[valread] = '\0';
-            //fprintf(fp, "%s", buffer);
+            
             fwrite(buffer, 1, valread, fp);
             printf("read and write cycle\n");
         }
@@ -571,15 +555,7 @@ int main(int argc , char *argv[])
             printf("New connection , socket fd is %d , ip is : %s , port : %d\n" ,
                    new_socket , inet_ntoa(address.sin_addr) , ntohs
                   (address.sin_port));
-            /*
-            //send new connection greeting message
-            if( send(new_socket, message, strlen(message), 0) != strlen(message) )
-            {
-                perror("send");
-            }
-
-            puts("Welcome message sent successfully");
-            */
+            
             //add new socket to array of sockets
             for (i = 0; i < max_clients; i++)
             {
@@ -625,9 +601,9 @@ int main(int argc , char *argv[])
                     //set the string terminating NULL byte on the end
                     //of the data read
                     buffer[valread] = '\0';
-                    //openDataSocket(sd, data_addr);
+                    
                     parseMsg(buffer, sd, i, sd2stat, users, client_socket, data_addr, default_path); //process msg
-                    //send(sd , buffer , strlen(buffer) , 0 );
+                    
                 }
             }
         }
