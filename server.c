@@ -115,7 +115,7 @@ int openDataSocket(int sd, struct sockaddr_in src_addr) {
         perror("socket creation failed\n");
         return -1;
     }
-
+/*
     if(setsockopt(new_sd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, // Needs to set SO_REUSEADDR to allow immediate re-bind
           sizeof(opt)) < 0 ) {
         perror("setsockopt");
@@ -126,7 +126,7 @@ int openDataSocket(int sd, struct sockaddr_in src_addr) {
         perror("bind failed\n");
         return -1;
     }
-
+*/
     if (connect(new_sd, (struct sockaddr *)&target_addr, sizeof(target_addr)) < 0) { // Connect to target
 
         perror("Connection Failed \n");
