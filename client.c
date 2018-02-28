@@ -255,7 +255,7 @@ int main(int argc, char const *argv[])
                     break;
                 }
             }
-
+        
             //Scan all the words from cmd, ignoring blank spaces
             while(sscanf(cmd, "%256s", dir)==0){
 
@@ -265,7 +265,7 @@ int main(int argc, char const *argv[])
             	printf("CD failed. Wrong command usage!\n");
         	}   
             else{
-	            chdir(dir);
+	            //chdir(dir);
 	            printf("Successfully executed!\n");
 	            if (getcwd(dir, sizeof(dir)) != NULL){
 	                printf("CD to directory: %s\n", dir);
