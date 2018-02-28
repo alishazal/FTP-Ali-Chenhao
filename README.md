@@ -50,25 +50,25 @@ No other commands are accepted. An "Invalid FTP Command" error is thrown to the 
 We implemented the server side using several functions to handle different requests, and a while loop in main() to drive the daemon. Every command except USER and PASS requires authentication.
 
 1. ### USER username
-When server receives this command, it passes it to the processUser() function, which uses another function findUser() to go over the clients stored in the server. It then prints the username found/not-found message on both the server and client side.
+When server receives this command, it passes it to the `processUser()` function, which uses another function findUser() to go over the clients stored in the server. It then prints the username found/not-found message on both the server and client side.
 
 2. ### PASS password
-This command is passed by the server to processPass(), which checks if the username was set first and then checks if the password is correct. The corresponding message is printed on server and client sides.
+This command is passed by the server to `processPass()`, which checks if the username was set first and then checks if the password is correct. The corresponding message is printed on server and client sides.
 
 3. ### PUT filename
-This command causes the server to start a seperate data connection and create a file called filename on its directory. Read and write cycles through recv() are run to recieve the file sent by client. 
+This command causes the server to start a seperate data connection and create a file called filename on its directory. Read and write cycles through `recv()` are run to recieve the file sent by client. 
 
 4. ### GET filename
 Again, a seperate data connection is started by the server by this command. Server checks if the file specified by the user actually exists. If it does, read and send cycles are run to send the file to client.
 
 5. ### CD ...
-This command is used to change the current server directory. This has been implemented through the chdir() function. 
+This command is used to change the current server directory. This has been implemented through the `chdir()` function. 
 
 6. ### LS ...
-This command is used to list all the files under the current server directory. CHENHAO
+This command is used to list all the files under the current server directory. Server sends the results through a seperate data connection.
 
 7. ### PWD
-This command displays the current server directory. CHENHAO
+This command displays the current server directory. Server sends the results through a seperate data connection.  
 
 8. ### QUIT
 This command quits the FTP session and closes the control TCP connection
@@ -77,4 +77,5 @@ This command quits the FTP session and closes the control TCP connection
 No other commands are accepted. An "Invalid FTP Command" error is thrown to the client in this case.
 
 - ## Select and Context Switching
-CHENHAO
+`Select()` is used to accept new connections and to process and differentiate control messages from different clients. Connections from different clients are maintained in an array of socket descriptors (`client_socket`).  
+An `sd_stat` struct is used to maintain the state of each connection, including whether the connection has been authenticated, its corresponding user (represented with the `User` struct) and its current working directory at the server. Upon receiving control messages from an authenticated user, the server performs a context switch where the working directory is changed to where the connection was last working in.
