@@ -1,9 +1,7 @@
 # File Transfer Protocol Implementation - Computer Networks
 Project 1: A File Transfer Protocol for Prof. Yasir Zaki's class Computer Networks by Ali Shazal and Chenhao Mark Xu.
 
-## Useful Links
-
-https://github.abudhabi.nyu.edu/as10505/Ftp-AliShazal-Chenhao  
+## Useful Links 
 https://www.geeksforgeeks.org/socket-programming-cc/
 
 ## Checkpoint I:
