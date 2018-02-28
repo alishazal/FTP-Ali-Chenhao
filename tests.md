@@ -1,0 +1,14 @@
+### Test cases  
+- Single and multiple clients
+- Invalid commands
+- Commands before user authentication
+- `USER` with non-existent and existent usernames
+- `PASS` before setting username
+- `PASS` with incorrect and correct passwords
+- `!CD` with non-existent and existent directories
+- `CD` with non-existent and existent directories
+- `PWD`
+- `LS` with non-existent and existent directories
+- `GET` non-existent and existent binary files
+- `PUT` non-existent and existent binary files
+- `QUIT`
