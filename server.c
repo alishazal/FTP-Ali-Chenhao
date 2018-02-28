@@ -183,6 +183,7 @@ void processPWD(char* command, int sd, struct sockaddr_in src_addr) {
 
     if (data_sd == -1) {
         perror("Data channel connection failed\n");
+        sendMsg(sd, "Data channel connection failed\n");
         return;
     }
 
@@ -227,6 +228,7 @@ void processGet(char* filename, int sd, struct sockaddr_in src_addr, char* buffe
 
     if (data_sd == -1) {
         perror("Data channel connection failed\n");
+        sendMsg(sd, "Data channel connection failed\n");
         return;
     }
 
@@ -261,6 +263,8 @@ void processPut(char* filename, int sd, struct sockaddr_in src_addr, char* buffe
 
     if (data_sd == -1) {
         perror("Data channel connection failed\n");
+        sendMsg(sd, "Data channel connection failed\n");
+
         return;
     }
 
