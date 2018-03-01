@@ -112,6 +112,20 @@ int openDataSocket(int sd, struct sockaddr_in src_addr) {
         return -1;
     }
     
+    /* Bind the socket to a fixed data port according to protocol. This works fine on Unix but seems to cause connection problems on 
+    Macs when connecting to the same client a second time, therefore commented out. 
+ -    if(setsockopt(new_sd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, // Needs to set SO_REUSEADDR to allow immediate re-bind
+ -          sizeof(opt)) < 0 ) {
+ -        perror("setsockopt");
+ -        return -1;
+ -    }
+ -
+ -    if (bind(new_sd, (struct sockaddr *)&src_addr, sizeof(src_addr)) < 0) { // Bind socket to source port
+ -        perror("bind failed\n");
+ -        return -1;
+ -    }
+ -*/
+    
     if (connect(new_sd, (struct sockaddr *)&target_addr, sizeof(target_addr)) < 0) { // Connect to target
 
         perror("Connection Failed \n");
